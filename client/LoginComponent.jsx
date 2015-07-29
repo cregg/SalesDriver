@@ -1,18 +1,7 @@
-/** MyAwesomeReactComponent.jsx */
- 
 var React = require('react');
-var mui = require('material-ui');
-var ThemeManager = new mui.Styles.ThemeManager();
+var classNames = require('classnames');
 
 var LoginComponent = React.createClass({
-  childContextTypes: {
-    muiTheme: React.PropTypes.object
-  },
-  getChildContext: function() {
-    return {
-      muiTheme: ThemeManager.getCurrentTheme()
-    };
-  },
   getInitialState: function(){
     return { visible : 'inline' };
   },
@@ -22,10 +11,19 @@ var LoginComponent = React.createClass({
   handleSubmit: function(e){
     e.preventDefault();
     var loginComponent = this;
-    localStorage.setItem('agileAuth', '' + this.state.login + ':' + this.state.password);
-    loginComponent.setState({visible : 'none'});
-    chrome.tabs.executeScript({file: "agile_background.js"}, function() {
-        console.log("salesdriver Loaded");
+    chrome.cookies.set(
+      {
+        url : "https://www.linkedin.com/",
+        name : 'agileAuth',
+        value : this.state.login + ':' + this.state.password,
+        expirationDate : ((new Date().getTime()/1000) + (3600*24))
+      }, 
+      function(cookie){
+        loginComponent.setState({visible : 'none'});
+        chrome.tabs.executeScript({file: "/public/javascripts/agile_background.js"}, function() {
+          console.log("salesdriver Loaded");
+          window.close();
+        });
     });
   },
   handlePasswordChange: function(e){
@@ -35,17 +33,8 @@ var LoginComponent = React.createClass({
     this.setState({login: e.target.value});
   },
   render: function() {
-    var cx = React.addons.classSet;
-    var fullRowInputClass = cx({
-      'input-field' : true,
-      'col': true,
-      's12': true  
-    });
-    var buttonClass = cx({
-      'waves-effect': true,
-      'waves-light': true,
-      'btn': true
-    });
+    var fullRowInputClass = classNames('input-field', 'col', 's12');
+    var buttonClass = classNames('waves-effect', 'waves-light', 'btn');
     return (
         <div style={{display : this.state.visible}}>
           <form onSubmit={this.handleSubmit}>
@@ -65,8 +54,7 @@ var LoginComponent = React.createClass({
           </form>
         </div>
     );
-  }
- 
+  } 
 });
  
 module.exports = LoginComponent;

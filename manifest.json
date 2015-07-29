@@ -2,8 +2,8 @@
   "manifest_version": 2,
  
   "name": "SalesDriver Plugin",
-  "description": "Tool for Quickly adding to the sales process",
-  "version": "1.1.1.0",
+  "description": "Drives your sales like Google drives cars.",
+  "version": "1.2.0.0",
   "browser_action": {
    "default_icon": "crewdriver-logo.png",
    "default_popup": "public/index.html"
@@ -11,12 +11,10 @@
   "permissions": [
         "https://getworkers.agilecrm.com/dev/*",
         "tabs",
-        "https://www.linkedin.com/sales/*"
+        "https://www.linkedin.com/sales/*",
+        "cookies",
+        "https://www.linkedin.com/"
   ],
-  "background": {
-        "scripts": ["background.js"],
-        "persistent": false
-  },
    "icons" : {
     "16": "crewdriver-logo.png"
    }

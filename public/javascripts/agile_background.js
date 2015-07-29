@@ -4,9 +4,18 @@ var $ = require('jquery');
 
 debugger;
 
-var adminAuth = localStorage.getItem('adminAuth');
+function getCookie(cname) {
+    var name = cname + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0; i<ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1);
+        if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+    }
+    return "";
+}
 
-function sendToAgile(button, nameArray){
+function sendToAgile(button, nameArray, adminAuth){
 	console.log("Send To Agile");
 	var employmentText = $(button.currentTarget).parents('.entity-content').find('.headline').text();
 	var title = window.prompt('Enter Title', employmentText);
@@ -24,51 +33,57 @@ function sendToAgile(button, nameArray){
   	data: JSON.stringify(createContact(nameArray[0], nameArray[1], title, company, tags))
 	});
 	createAjax.done(function(response){
-		console.log('Complete');
+		alert('Succesfully added that lead.');
 	});
 	createAjax.error(function(response){
-		console.log('Error');
+		alert(response.responseText);
 	});
 }
 
-var buttonText = "<button class='action-btn save-lead add-to-agile'>Add To Agile</button>";
+function searchContacts(adminAuth){
+	var buttonText = "<button class='action-btn save-lead add-to-agile'>Add To Agile</button>";
+	var encodedName = [];
+	var badgeWrappers = $(".badge-wrapper");
+	var ajaxNameSearches = [];
 
-var encodedName = [];
-
-var badgeWrappers = $(".badge-wrapper");
-
-var ajaxNameSearches = [];
-
-$('.name a').each(function(index){
-	var nameArray = this.text.split(' ');
-	var nameSearch = $.ajax({
-		url : 'https://getworkers.agilecrm.com/dev/api/search?page_size=10&type=PERSON&q=' + getEncodedName(nameArray),
-		headers: { 'Accept': 'application/json' },
-		beforeSend: function(xhr) { 
-  		xhr.setRequestHeader("Authorization", "Basic " + btoa(adminAuth)); 
-  	},
-	});
-	var thisPerson = this;
-	ajaxNameSearches.push(nameSearch);
-	nameSearch.done(function(contacts){
-		if(contacts.length <= 0){
-			$(badgeWrappers[index]).append(buttonText);
-			$(thisPerson).parents('h3').find(".add-to-agile").click(function(item){
-				sendToAgile(item, nameArray);   
-			});
-			return;
+	$('.name a').each(function(index){
+		var nameArray = stripText(this.text).trim().split(' ');
+		if(nameArray.length > 2){
+			nameArray = [nameArray[0], nameArray[2]];
 		}
-		for(var i = 0; i < contacts.length; i++){
-			if(contactExists(contacts[i].properties, nameArray)){
+		var nameSearch = $.ajax({
+			url : 'https://getworkers.agilecrm.com/dev/api/search?page_size=15&type=PERSON&q=' + getEncodedName(nameArray),
+			headers: { 'Accept': 'application/json' },
+			beforeSend: function(xhr) { 
+	  		xhr.setRequestHeader("Authorization", "Basic " + btoa(adminAuth)); 
+	  	},
+		});
+		var thisPerson = this;
+		ajaxNameSearches.push(nameSearch);
+		nameSearch.done(function(contacts){
+			if(contacts.length <= 0){
+				$(badgeWrappers[index]).append(buttonText);
+				$(thisPerson).parents('.entity-content').find(".add-to-agile").click(function(item){
+					sendToAgile(item, nameArray, adminAuth);   
+				});
 				return;
-			}	
-		}
-		$(badgeWrappers[index]).append(buttonText);
-		$(thisPerson).parents('.entity-content').find(".add-to-agile").click(function(item){
-			sendToAgile(item, nameArray);   
+			}
+			for(var i = 0; i < contacts.length; i++){
+				if(contactExists(contacts[i].properties, nameArray)){
+					return;
+				}	
+			}
+			$(badgeWrappers[index]).append(buttonText);
+			$(thisPerson).parents('.entity-content').find(".add-to-agile").click(function(item){
+				sendToAgile(item, nameArray, adminAuth);   
+			});
+		});
+		nameSearch.error(function(){
+			$(badgeWrappers[index]).append('Error Searching Agile For this Jabroni');
+			alert("Error getting search ")
 		});
 	});
-});
+}
 
 function getEncodedName(arrayOfName){
 	return arrayOfName[0] + '%20' + arrayOfName[1];
@@ -82,10 +97,10 @@ function contactExists(properties, nameArray){
 	}
 	for(var i = 0; i < properties.length; i++){
 		if(properties[i].name === 'first_name'){
-			firstNameCheck = nameArray[0].toLowerCase() === properties[i].value.toLowerCase() ? true : false;
+			firstNameCheck = nameArray[0].toLowerCase() === stripText(properties[i].value).trim().toLowerCase() ? true : false;
 		}
 		if(properties[i].name === 'last_name'){
-			lastNameCheck = nameArray[1].toLowerCase() === properties[i].value.toLowerCase() ? true : false;
+			lastNameCheck = nameArray[1].toLowerCase() === stripText(properties[i].value).trim().toLowerCase() ? true : false;
 		}
 	}
 	return firstNameCheck && lastNameCheck;
@@ -122,13 +137,18 @@ function createContact(firstName, lastName, title, company, tags){
 	};
 }
 
+function stripText(text){
+	return text.replace(/[^a-zA-Z | /s]/g, '').replace(/[^\x00-\x7F]]/g, '');
+}
+
+searchContacts(getCookie('agileAuth'));
 
 
 
 
 
 
-}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_10084566.js","/")
+}).call(this,require("1YiZ5S"),typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer,arguments[3],arguments[4],arguments[5],arguments[6],"/fake_4554936.js","/")
 },{"1YiZ5S":5,"buffer":2,"jquery":6}],2:[function(require,module,exports){
 (function (process,global,Buffer,__argument0,__argument1,__argument2,__argument3,__filename,__dirname){
 /*!
