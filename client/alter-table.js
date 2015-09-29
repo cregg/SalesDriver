@@ -13,12 +13,12 @@ function getCookie(cname) {
     return "";
 }
 
-function sendToAgile(button, nameArray, adminAuth){
+function sendToAgile(button, nameArray, adminAuth, tags, email){
 	console.log("Send To Agile");
-	var employmentText = $(button.currentTarget).parents('.entity-content').find('.headline').text();
+	var employmentText = $(button.currentTarget).parents('li').find('.description').text();
 	var title = window.prompt('Enter Title', employmentText);
 	var company = window.prompt('Enter Company', employmentText);
-	var tags = window.prompt('Tags? (Separate by , i.e LinkedIn,Security,something Else, )', 'LinkedIn');
+	var tags = window.prompt('Tags? (Separate by , i.e LinkedIn,Security,something Else, )', tags);
 	tags = tags.split(','); 
 	var createAjax = $.ajax({
 		url: 'https://getworkers.agilecrm.com/dev/api/contacts',
@@ -28,9 +28,10 @@ function sendToAgile(button, nameArray, adminAuth){
 		beforeSend: function(xhr) { 
   		xhr.setRequestHeader("Authorization", "Basic " + btoa(adminAuth));
   	},
-  	data: JSON.stringify(createContact(nameArray[0], nameArray[1], title, company, tags))
+  	data: JSON.stringify(createContact(nameArray[0], nameArray[1], title, company, tags, email)),
 	});
-	createAjax.done(function(response){
+	createAjax.done(function(contact){
+		postDeal(adminAuth, company, contact);
 		alert('Succesfully added that lead.');
 	});
 	createAjax.error(function(response){
@@ -38,13 +39,13 @@ function sendToAgile(button, nameArray, adminAuth){
 	});
 }
 
-function searchContacts(adminAuth){
+function searchContacts(adminAuth, tags){
 	var buttonText = "<button class='action-btn save-lead add-to-agile'>Add To Agile</button>";
 	var encodedName = [];
-	var badgeWrappers = $(".badge-wrapper");
+	var badgeWrappers = $(".badges");
 	var ajaxNameSearches = [];
 
-	$('.name a').each(function(index){
+	$('.title').each(function(index){
 		var nameArray = stripText(this.text).trim().split(' ');
 		if(nameArray.length > 2){
 			nameArray = [nameArray[0], nameArray[2]];
@@ -61,8 +62,8 @@ function searchContacts(adminAuth){
 		nameSearch.done(function(contacts){
 			if(contacts.length <= 0){
 				$(badgeWrappers[index]).append(buttonText);
-				$(thisPerson).parents('.entity-content').find(".add-to-agile").click(function(item){
-					sendToAgile(item, nameArray, adminAuth);   
+				$(thisPerson).parents('h3').find(".add-to-agile").click(function(item){
+					getEmail($(thisPerson).attr('href'), item, nameArray, adminAuth, tags);
 				});
 				return;
 			}
@@ -73,12 +74,12 @@ function searchContacts(adminAuth){
 			}
 			$(badgeWrappers[index]).append(buttonText);
 			$(thisPerson).parents('.entity-content').find(".add-to-agile").click(function(item){
-				sendToAgile(item, nameArray, adminAuth);   
+				getEmail($(thisPerson).attr('href'), item, nameArray, adminAuth, tags);
 			});
 		});
 		nameSearch.error(function(){
 			$(badgeWrappers[index]).append('Error Searching Agile For this Jabroni');
-			alert("Error getting search ")
+			alert("Error getting search ");
 		});
 	});
 }
@@ -104,12 +105,11 @@ function contactExists(properties, nameArray){
 	return firstNameCheck && lastNameCheck;
 }
 
-function createContact(firstName, lastName, title, company, tags){
-	return {
+function createContact(firstName, lastName, title, company, tags, email){
+	var emailProperty;
+	var contact = {
 		'type': 'PERSON',
 		'tags': tags,
-		'lead_score': '1',
-		'star_value': '1',
 		'properties': [
 			{
 				'type': 'SYSTEM',
@@ -131,7 +131,35 @@ function createContact(firstName, lastName, title, company, tags){
 				'name': 'title',
 				'value': title,
 			},
+			{
+				'type': 'CUSTOM',
+				'name': 'Lead Status',
+				'value': 'Lead'
+			}
 		]
+	};
+	if(email !== ""){
+		emailProperty = {
+				'type': 'SYSTEM',
+				'name': 'email',
+				'value': email,
+			}
+		contact.properties.push(emailProperty);
+	}
+	return contact;
+}
+
+function createDeal(companyName, contact){
+	var contactArray = [];
+	contactArray.push(contact.id);
+	return {
+		name: companyName,
+		expected_value: '10',
+		probability: '10',
+		pipeline_id: '5693471696355328',
+		milestone: 'Added',
+		owner_id: '6490707728531456',
+		contact_ids: contactArray,
 	};
 }
 
@@ -139,9 +167,45 @@ function stripText(text){
 	return text.replace(/[^a-zA-Z | /s]/g, '').replace(/[^\x00-\x7F]]/g, '');
 }
 
-searchContacts(getCookie('agileAuth'));
+function postDeal(adminAuth, companyName, contact){
+	return $.ajax(
+	{
+		url : 'https://getworkers.agilecrm.com/dev/api/opportunity',
+		method: 'post',
+		headers: { 'Content-Type': 'application/json' },
+		data: JSON.stringify(createDeal(companyName, contact)),
+		beforeSend: function(xhr) { 
+			xhr.setRequestHeader("Authorization", "Basic " + btoa(adminAuth)); 
+		},
+		success: function(response){
+			alert('Deal Created.');
+		},
+		error: function(response){
+			alert('No Deal');
+		}
+	});
+}
+var tags = prompt('Default Tags - (Separate by , i.e LinkedIn,Security,something Else, )', '');
+searchContacts(getCookie('agileAuth'), tags);
 
-
-
-
-
+function getEmail(url, item, nameArray, adminAuth, tags){
+	var newWindow = window.open(url);
+	$(newWindow).load(function(){
+		var newDoc = newWindow.document;
+		$(newDoc).ready(function(){
+			if($(newDoc).find('.more-info-tray').find('a')[0] == null){
+				alert("Couldn't get Email for some reason...");
+				$(newWindow).unload(function(){
+					sendToAgile(item, nameArray, adminAuth, tags, "");
+				});
+				newWindow.close();
+				return;	
+			}
+			var email = $(newDoc).find('.more-info-tray').find('a')[0].text;
+			$(newWindow).unload(function(){
+				sendToAgile(item, nameArray, adminAuth, tags, email);
+			});
+			newWindow.close();
+		});
+	});
+}

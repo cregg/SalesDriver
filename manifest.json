@@ -3,7 +3,7 @@
  
   "name": "SalesDriver Plugin",
   "description": "Drives your sales like Google drives cars.",
-  "version": "1.2.0.0",
+  "version": "2.1.0.0",
   "browser_action": {
    "default_icon": "crewdriver-logo.png",
    "default_popup": "public/index.html"
