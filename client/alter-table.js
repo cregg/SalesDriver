@@ -15,7 +15,7 @@ function getCookie(cname) {
 
 function sendToAgile(button, nameArray, adminAuth, tags, email){
 	console.log("Send To Agile");
-	var employmentText = $(button.currentTarget).parents('li').find('.description').text();
+	var employmentText = $(button.currentTarget).parents('li').find('.headline').text();
 	var title = window.prompt('Enter Title', employmentText);
 	var company = window.prompt('Enter Company', employmentText);
 	var tags = window.prompt('Tags? (Separate by , i.e LinkedIn,Security,something Else, )', tags);
@@ -45,8 +45,8 @@ function searchContacts(adminAuth, tags){
 	var badgeWrappers = $(".badges");
 	var ajaxNameSearches = [];
 
-	$('.title').each(function(index){
-		var nameArray = stripText(this.text).trim().split(' ');
+	$('.name > a').each(function(index){
+		var nameArray = stripText(this.textContent).trim().split(' ');
 		if(nameArray.length > 2){
 			nameArray = [nameArray[0], nameArray[2]];
 		}
@@ -62,7 +62,7 @@ function searchContacts(adminAuth, tags){
 		nameSearch.done(function(contacts){
 			if(contacts.length <= 0){
 				$(badgeWrappers[index]).append(buttonText);
-				$(thisPerson).parents('h3').find(".add-to-agile").click(function(item){
+				$(thisPerson).parents('li').find('.add-to-agile').click(function(item){
 					getEmail($(thisPerson).attr('href'), item, nameArray, adminAuth, tags);
 				});
 				return;
@@ -73,7 +73,7 @@ function searchContacts(adminAuth, tags){
 				}	
 			}
 			$(badgeWrappers[index]).append(buttonText);
-			$(thisPerson).parents('.entity-content').find(".add-to-agile").click(function(item){
+			$(thisPerson).parents('li').find(".add-to-agile").click(function(item){
 				getEmail($(thisPerson).attr('href'), item, nameArray, adminAuth, tags);
 			});
 		});
@@ -141,7 +141,8 @@ function createContact(firstName, lastName, title, company, tags, email){
 	if(email !== ""){
 		emailProperty = {
 				'type': 'SYSTEM',
-				'name': 'email',
+				'name': 'website',
+				'subtype': 'LinkedIn',
 				'value': email,
 			}
 		contact.properties.push(emailProperty);
